@@ -1,0 +1,476 @@
+{
+  "escenario_1_multi_paso": [
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Cómo clasificaron los pilotos de Ferrari en el GP de Japón y cómo terminaron la carrera?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_escuderia",
+          "argumentos": {
+            "nombre": "Ferrari"
+          }
+        },
+        {
+          "nombre": "buscar_gran_premio",
+          "argumentos": {
+            "nombre": "Japón"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Escudería encontrada: 'Ferrari' → escuderia_id=1",
+      "herramienta": "buscar_escuderia"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Gran Premio encontrado: GP de Japón (temporada 2026, pista Suzuka, Japón) → gran_premio_id=1",
+      "herramienta": "buscar_gran_premio"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_pilotos_por_escuderia",
+          "argumentos": {
+            "escuderia_id": 1
+          }
+        },
+        {
+          "nombre": "buscar_sesion",
+          "argumentos": {
+            "gran_premio_id": 1,
+            "tipo_sesion": "QUALY"
+          }
+        },
+        {
+          "nombre": "buscar_sesion",
+          "argumentos": {
+            "gran_premio_id": 1,
+            "tipo_sesion": "CARRERA"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Pilotos encontrados:\n- Charles Leclerc (n°16, piloto_id=1)\n- Carlos Sainz (n°55, piloto_id=2)",
+      "herramienta": "buscar_pilotos_por_escuderia"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Sesión encontrada: QUALY del gran_premio_id=1, fecha 2026-04-04 → sesion_id=1",
+      "herramienta": "buscar_sesion"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Sesión encontrada: CARRERA del gran_premio_id=1, fecha 2026-04-05 → sesion_id=2",
+      "herramienta": "buscar_sesion"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_resultados_sesion",
+          "argumentos": {
+            "sesion_id": 1
+          }
+        },
+        {
+          "nombre": "buscar_resultados_sesion",
+          "argumentos": {
+            "sesion_id": 2
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Resultados de la sesión QUALY (sesion_id=1):\n- Max Verstappen: posición 1, tiempo 1:28.772\n- Charles Leclerc: posición 2, tiempo 1:29.104\n- Lando Norris: posición 3, tiempo 1:29.318\n- George Russell: posición 4, tiempo 1:29.402\n- Carlos Sainz: posición 5, tiempo 1:29.510\n- Oscar Piastri: posición 6, tiempo 1:29.644\n- Andrea Kimi Antonelli: posición 7, tiempo 1:29.701\n- Yuki Tsunoda: posición 8, tiempo 1:29.795\n- Alex Albon: posición 9, tiempo 1:30.015\n- Franco Colapinto: posición 10, tiempo 1:30.455\n- Fernando Alonso: posición 11, tiempo 1:30.620\n- Lance Stroll: posición 12, tiempo 1:30.744",
+      "herramienta": "buscar_resultados_sesion"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Resultados de la sesión CARRERA (sesion_id=2):\n- Max Verstappen: posición 1, tiempo 1:32:45.120, 25.0 puntos\n- Lando Norris: posición 2, tiempo +5.412, 18.0 puntos\n- George Russell: posición 3, tiempo +12.880, 15.0 puntos\n- Charles Leclerc: posición 4, tiempo +18.402, 12.0 puntos\n- Carlos Sainz: posición 5, tiempo +21.880, 10.0 puntos\n- Oscar Piastri: posición 6, tiempo +48.301, 8.0 puntos\n- Andrea Kimi Antonelli: posición 7, tiempo +1:01.204, 6.0 puntos\n- Yuki Tsunoda: posición 8, tiempo +1:05.884, 4.0 puntos\n- Alex Albon: posición 9, tiempo +1:10.015, 2.0 puntos\n- Fernando Alonso: posición 10, tiempo +1:15.880, 0.0 puntos\n- Lance Stroll: posición 12, tiempo +1:22.890, 0.0 puntos\n- Franco Colapinto: sin clasificar (DNF o no completó la sesión)",
+      "herramienta": "buscar_resultados_sesion"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "Acá tenés el resumen de Ferrari en el **GP de Japón 2026** (Suzuka):\n\n**Clasificación (QUALY):**\n- 🏎️ **Charles Leclerc** (n°16): **2.º** con 1:29.104\n- 🏎️ **Carlos Sainz** (n°55): **5.º** con 1:29.510\n\n**Carrera (CARRERA):**\n- 🏎️ **Charles Leclerc**: **4.º** (+18.402) → 12 puntos\n- 🏎️ **Carlos Sainz**: **5.º** (+21.880) → 10 puntos\n\nEn resumen, Ferrari arrancó muy bien en clasificación (Leclerc a solo 0.332s del pole de Verstappen), pero en carrera ambos perdieron una posición respecto a su grid y terminaron 4.º y 5.º, sumando 22 puntos en conjunto."
+    }
+  ],
+  "escenario_2_memoria": [
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Cómo clasificaron los pilotos de Ferrari en el GP de Japón y cómo terminaron la carrera?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_escuderia",
+          "argumentos": {
+            "nombre": "Ferrari"
+          }
+        },
+        {
+          "nombre": "buscar_gran_premio",
+          "argumentos": {
+            "nombre": "Japón"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Escudería encontrada: 'Ferrari' → escuderia_id=1",
+      "herramienta": "buscar_escuderia"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Gran Premio encontrado: GP de Japón (temporada 2026, pista Suzuka, Japón) → gran_premio_id=1",
+      "herramienta": "buscar_gran_premio"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_pilotos_por_escuderia",
+          "argumentos": {
+            "escuderia_id": 1
+          }
+        },
+        {
+          "nombre": "buscar_sesion",
+          "argumentos": {
+            "gran_premio_id": 1,
+            "tipo_sesion": "QUALY"
+          }
+        },
+        {
+          "nombre": "buscar_sesion",
+          "argumentos": {
+            "gran_premio_id": 1,
+            "tipo_sesion": "CARRERA"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Pilotos encontrados:\n- Charles Leclerc (n°16, piloto_id=1)\n- Carlos Sainz (n°55, piloto_id=2)",
+      "herramienta": "buscar_pilotos_por_escuderia"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Sesión encontrada: QUALY del gran_premio_id=1, fecha 2026-04-04 → sesion_id=1",
+      "herramienta": "buscar_sesion"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Sesión encontrada: CARRERA del gran_premio_id=1, fecha 2026-04-05 → sesion_id=2",
+      "herramienta": "buscar_sesion"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_resultados_sesion",
+          "argumentos": {
+            "sesion_id": 1
+          }
+        },
+        {
+          "nombre": "buscar_resultados_sesion",
+          "argumentos": {
+            "sesion_id": 2
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Resultados de la sesión QUALY (sesion_id=1):\n- Max Verstappen: posición 1, tiempo 1:28.772\n- Charles Leclerc: posición 2, tiempo 1:29.104\n- Lando Norris: posición 3, tiempo 1:29.318\n- George Russell: posición 4, tiempo 1:29.402\n- Carlos Sainz: posición 5, tiempo 1:29.510\n- Oscar Piastri: posición 6, tiempo 1:29.644\n- Andrea Kimi Antonelli: posición 7, tiempo 1:29.701\n- Yuki Tsunoda: posición 8, tiempo 1:29.795\n- Alex Albon: posición 9, tiempo 1:30.015\n- Franco Colapinto: posición 10, tiempo 1:30.455\n- Fernando Alonso: posición 11, tiempo 1:30.620\n- Lance Stroll: posición 12, tiempo 1:30.744",
+      "herramienta": "buscar_resultados_sesion"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Resultados de la sesión CARRERA (sesion_id=2):\n- Max Verstappen: posición 1, tiempo 1:32:45.120, 25.0 puntos\n- Lando Norris: posición 2, tiempo +5.412, 18.0 puntos\n- George Russell: posición 3, tiempo +12.880, 15.0 puntos\n- Charles Leclerc: posición 4, tiempo +18.402, 12.0 puntos\n- Carlos Sainz: posición 5, tiempo +21.880, 10.0 puntos\n- Oscar Piastri: posición 6, tiempo +48.301, 8.0 puntos\n- Andrea Kimi Antonelli: posición 7, tiempo +1:01.204, 6.0 puntos\n- Yuki Tsunoda: posición 8, tiempo +1:05.884, 4.0 puntos\n- Alex Albon: posición 9, tiempo +1:10.015, 2.0 puntos\n- Fernando Alonso: posición 10, tiempo +1:15.880, 0.0 puntos\n- Lance Stroll: posición 12, tiempo +1:22.890, 0.0 puntos\n- Franco Colapinto: sin clasificar (DNF o no completó la sesión)",
+      "herramienta": "buscar_resultados_sesion"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "Acá tenés el resumen de Ferrari en el **GP de Japón 2026** (Suzuka):\n\n**Clasificación (QUALY):**\n- 🏎️ **Charles Leclerc** (n°16): **2.º** con 1:29.104\n- 🏎️ **Carlos Sainz** (n°55): **5.º** con 1:29.510\n\n**Carrera (CARRERA):**\n- 🏎️ **Charles Leclerc**: **4.º** (+18.402) → 12 puntos\n- 🏎️ **Carlos Sainz**: **5.º** (+21.880) → 10 puntos\n\nEn resumen, Ferrari arrancó muy bien en clasificación (Leclerc a solo 0.332s del pole de Verstappen), pero en carrera ambos perdieron una posición respecto a su grid y terminaron 4.º y 5.º, sumando 22 puntos en conjunto."
+    },
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Y los de Mercedes?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_escuderia",
+          "argumentos": {
+            "nombre": "Mercedes"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Escudería encontrada: 'Mercedes' → escuderia_id=2",
+      "herramienta": "buscar_escuderia"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_pilotos_por_escuderia",
+          "argumentos": {
+            "escuderia_id": 2
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Pilotos encontrados:\n- George Russell (n°63, piloto_id=3)\n- Andrea Kimi Antonelli (n°12, piloto_id=4)",
+      "herramienta": "buscar_pilotos_por_escuderia"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "Acá tenés el resumen de **Mercedes** en el **GP de Japón 2026** (Suzuka):\n\n**Clasificación (QUALY):**\n- 🏎️ **George Russell** (n°63): **4.º** con 1:29.402\n- 🏎️ **Andrea Kimi Antonelli** (n°12): **7.º** con 1:29.701\n\n**Carrera (CARRERA):**\n- 🏎️ **George Russell**: **3.º** (+12.880) → 15 puntos\n- 🏎️ **Andrea Kimi Antonelli**: **7.º** (+1:01.204) → 6 puntos\n\nEn resumen, Russell subió una posición respecto a su grid y se subió al podio, mientras que Antonelli perdió dos posiciones y terminó 7.º. Mercedes sumó 21 puntos en total."
+    }
+  ],
+  "escenario_3_error_y_aclaracion": [
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Cómo le fue a Colapinto en el GP de Brasil?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_gran_premio",
+          "argumentos": {
+            "nombre": "Brasil"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "ERROR: no se encontró ningún Gran Premio que coincida con 'Brasil'. Gran Premios disponibles: GP de Japón 2026, GP de Italia 2026, GP de Reino Unido 2026, GP de Mónaco 2026",
+      "herramienta": "buscar_gran_premio"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "No encontré un GP de Brasil en la base de datos. Los únicos Grandes Premios disponibles para la temporada 2026 son:\n\n- GP de Japón 2026\n- GP de Italia 2026\n- GP de Reino Unido 2026\n- GP de Mónaco 2026\n\n¿Querés que te cuente cómo le fue a Colapinto en alguno de estos?"
+    }
+  ],
+  "escenario_recordado_proceso_nuevo": [
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Cómo clasificaron los pilotos de Ferrari en el GP de Japón y cómo terminaron la carrera?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_escuderia",
+          "argumentos": {
+            "nombre": "Ferrari"
+          }
+        },
+        {
+          "nombre": "buscar_gran_premio",
+          "argumentos": {
+            "nombre": "Japón"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Escudería encontrada: 'Ferrari' → escuderia_id=1",
+      "herramienta": "buscar_escuderia"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Gran Premio encontrado: GP de Japón (temporada 2026, pista Suzuka, Japón) → gran_premio_id=1",
+      "herramienta": "buscar_gran_premio"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_pilotos_por_escuderia",
+          "argumentos": {
+            "escuderia_id": 1
+          }
+        },
+        {
+          "nombre": "buscar_sesion",
+          "argumentos": {
+            "gran_premio_id": 1,
+            "tipo_sesion": "QUALY"
+          }
+        },
+        {
+          "nombre": "buscar_sesion",
+          "argumentos": {
+            "gran_premio_id": 1,
+            "tipo_sesion": "CARRERA"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Pilotos encontrados:\n- Charles Leclerc (n°16, piloto_id=1)\n- Carlos Sainz (n°55, piloto_id=2)",
+      "herramienta": "buscar_pilotos_por_escuderia"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Sesión encontrada: QUALY del gran_premio_id=1, fecha 2026-04-04 → sesion_id=1",
+      "herramienta": "buscar_sesion"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Sesión encontrada: CARRERA del gran_premio_id=1, fecha 2026-04-05 → sesion_id=2",
+      "herramienta": "buscar_sesion"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_resultados_sesion",
+          "argumentos": {
+            "sesion_id": 1
+          }
+        },
+        {
+          "nombre": "buscar_resultados_sesion",
+          "argumentos": {
+            "sesion_id": 2
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Resultados de la sesión QUALY (sesion_id=1):\n- Max Verstappen: posición 1, tiempo 1:28.772\n- Charles Leclerc: posición 2, tiempo 1:29.104\n- Lando Norris: posición 3, tiempo 1:29.318\n- George Russell: posición 4, tiempo 1:29.402\n- Carlos Sainz: posición 5, tiempo 1:29.510\n- Oscar Piastri: posición 6, tiempo 1:29.644\n- Andrea Kimi Antonelli: posición 7, tiempo 1:29.701\n- Yuki Tsunoda: posición 8, tiempo 1:29.795\n- Alex Albon: posición 9, tiempo 1:30.015\n- Franco Colapinto: posición 10, tiempo 1:30.455\n- Fernando Alonso: posición 11, tiempo 1:30.620\n- Lance Stroll: posición 12, tiempo 1:30.744",
+      "herramienta": "buscar_resultados_sesion"
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Resultados de la sesión CARRERA (sesion_id=2):\n- Max Verstappen: posición 1, tiempo 1:32:45.120, 25.0 puntos\n- Lando Norris: posición 2, tiempo +5.412, 18.0 puntos\n- George Russell: posición 3, tiempo +12.880, 15.0 puntos\n- Charles Leclerc: posición 4, tiempo +18.402, 12.0 puntos\n- Carlos Sainz: posición 5, tiempo +21.880, 10.0 puntos\n- Oscar Piastri: posición 6, tiempo +48.301, 8.0 puntos\n- Andrea Kimi Antonelli: posición 7, tiempo +1:01.204, 6.0 puntos\n- Yuki Tsunoda: posición 8, tiempo +1:05.884, 4.0 puntos\n- Alex Albon: posición 9, tiempo +1:10.015, 2.0 puntos\n- Fernando Alonso: posición 10, tiempo +1:15.880, 0.0 puntos\n- Lance Stroll: posición 12, tiempo +1:22.890, 0.0 puntos\n- Franco Colapinto: sin clasificar (DNF o no completó la sesión)",
+      "herramienta": "buscar_resultados_sesion"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "Acá tenés el resumen de Ferrari en el **GP de Japón 2026** (Suzuka):\n\n**Clasificación (QUALY):**\n- 🏎️ **Charles Leclerc** (n°16): **2.º** con 1:29.104\n- 🏎️ **Carlos Sainz** (n°55): **5.º** con 1:29.510\n\n**Carrera (CARRERA):**\n- 🏎️ **Charles Leclerc**: **4.º** (+18.402) → 12 puntos\n- 🏎️ **Carlos Sainz**: **5.º** (+21.880) → 10 puntos\n\nEn resumen, Ferrari arrancó muy bien en clasificación (Leclerc a solo 0.332s del pole de Verstappen), pero en carrera ambos perdieron una posición respecto a su grid y terminaron 4.º y 5.º, sumando 22 puntos en conjunto."
+    },
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Y los de Mercedes?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_escuderia",
+          "argumentos": {
+            "nombre": "Mercedes"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Escudería encontrada: 'Mercedes' → escuderia_id=2",
+      "herramienta": "buscar_escuderia"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_pilotos_por_escuderia",
+          "argumentos": {
+            "escuderia_id": 2
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Pilotos encontrados:\n- George Russell (n°63, piloto_id=3)\n- Andrea Kimi Antonelli (n°12, piloto_id=4)",
+      "herramienta": "buscar_pilotos_por_escuderia"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "Acá tenés el resumen de **Mercedes** en el **GP de Japón 2026** (Suzuka):\n\n**Clasificación (QUALY):**\n- 🏎️ **George Russell** (n°63): **4.º** con 1:29.402\n- 🏎️ **Andrea Kimi Antonelli** (n°12): **7.º** con 1:29.701\n\n**Carrera (CARRERA):**\n- 🏎️ **George Russell**: **3.º** (+12.880) → 15 puntos\n- 🏎️ **Andrea Kimi Antonelli**: **7.º** (+1:01.204) → 6 puntos\n\nEn resumen, Russell subió una posición respecto a su grid y se subió al podio, mientras que Antonelli perdió dos posiciones y terminó 7.º. Mercedes sumó 21 puntos en total."
+    },
+    {
+      "tipo": "HumanMessage",
+      "contenido": "¿Y los de McLaren?"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_escuderia",
+          "argumentos": {
+            "nombre": "McLaren"
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Escudería encontrada: 'McLaren' → escuderia_id=3",
+      "herramienta": "buscar_escuderia"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "",
+      "tool_calls": [
+        {
+          "nombre": "buscar_pilotos_por_escuderia",
+          "argumentos": {
+            "escuderia_id": 3
+          }
+        }
+      ]
+    },
+    {
+      "tipo": "ToolMessage",
+      "contenido": "Pilotos encontrados:\n- Lando Norris (n°4, piloto_id=5)\n- Oscar Piastri (n°81, piloto_id=6)",
+      "herramienta": "buscar_pilotos_por_escuderia"
+    },
+    {
+      "tipo": "AIMessage",
+      "contenido": "Acá tenés el resumen de **McLaren** en el **GP de Japón 2026** (Suzuka):\n\n**Clasificación (QUALY):**\n- 🏎️ **Lando Norris** (n°4): **3.º** con 1:29.318\n- 🏎️ **Oscar Piastri** (n°81): **6.º** con 1:29.644\n\n**Carrera (CARRERA):**\n- 🏎️ **Lando Norris**: **2.º** (+5.412) → 18 puntos\n- 🏎️ **Oscar Piastri**: **6.º** (+48.301) → 8 puntos\n\nEn resumen, Norris subió una posición y se quedó a solo 5.4s del ganador Verstappen, mientras que Piastri mantuvo su posición de salida pero perdió terreno en carrera. McLaren sumó 26 puntos en total, siendo la escudería más puntuable del fin de semana."
+    }
+  ]
+}

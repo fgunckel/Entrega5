@@ -1,0 +1,11 @@
+langchain
+langchain-core
+langchain-google-genai
+langchain-openai
+langgraph
+langgraph-checkpoint-sqlite
+aiosqlite
+pydantic
+python-dotenv
+pytest
+pytest-asyncio

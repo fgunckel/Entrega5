@@ -1,0 +1,24 @@
+# Entorno / secretos
+.env
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# SQLite (checkpointer de LangGraph, regenerable)
+*.sqlite
+*.sqlite3
+
+# pytest
+.pytest_cache/
+
+# IDE / SO
+.idea/
+.vscode/
+__pycache__/
+.DS_Store
+Thumbs.db
