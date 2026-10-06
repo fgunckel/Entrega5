@@ -41,8 +41,10 @@ from src.tools import herramientas
 # Carga variables de entorno desde .env (API keys, etc.)
 load_dotenv()
 
-# recursion_limit pedido por la consigna para evitar ciclos infinitos.
-RECURSION_LIMIT = 10
+# recursion_limit: protege contra ciclos infinitos. Es 15 (y no 10) porque
+# el flujo mínimo con buscar_sesion obligatorio requiere 6 tool calls
+# secuenciales (13 supersteps) con modelos que no agrupan llamadas paralelas.
+RECURSION_LIMIT = 15
 
 # Archivo SQLite usado SOLO para el Checkpointer de LangGraph.
 CHECKPOINTS_DB = "checkpoints.sqlite"
@@ -90,10 +92,15 @@ Reglas:
   y, si no es posible resolverla, pedile al usuario la aclaración necesaria.
 - Para preguntas sobre "cómo clasificaron" usá la sesión QUALY; para "cómo
   terminaron" usá la sesión CARRERA.
-- Si varias herramientas son independientes entre sí (por ejemplo, buscar la
-  escudería y buscar el gran premio), llamálas todas en el mismo turno para
-  ahorrar pasos. Ejemplo: en un mismo turno podés llamar a la vez
-  buscar_escuderia("Ferrari") y buscar_gran_premio("Japón")."""
+- Encadená las herramientas paso a paso: primero obtené los IDs (escudería,
+  gran premio), después los pilotos y las sesiones con buscar_sesion, y por
+  último los resultados con los sesion_id devueltos.
+- Si una búsqueda devuelve ERROR porque la entidad no existe (ej. un Gran
+  Premio que no está en la base), NO repitas la misma búsqueda con otros
+  argumentos: informá el problema al usuario y pedile la aclaración necesaria
+  (por ejemplo, indicarle qué opciones están disponibles).
+- Cuando ya tengas todos los datos necesarios, respondé al usuario de forma
+  clara y ordenada; no llames a más herramientas si no hace falta."""
 
 
 async def nodo_modelo(state: MessagesState) -> dict:

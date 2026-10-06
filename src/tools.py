@@ -86,6 +86,8 @@ async def buscar_gran_premio(nombre: str, temporada: int | None = None) -> str:
     país/circuito (ej. 'Japón', 'GP de Japón', 'Mónaco') y necesites averiguar
     su gran_premio_id antes de consultar sesiones o resultados.
     Si hay varias temporadas, podés filtrar con el parámetro temporada.
+    Para obtener el sesion_id de la QUALY o de la CARRERA, usá después
+    buscar_sesion con el gran_premio_id devuelto.
     Devuelve un mensaje de ERROR si no se encuentra ningún Gran Premio.
     """
     objetivo = _normalizar(nombre)
@@ -173,38 +175,49 @@ async def buscar_sesion(gran_premio_id: int, tipo_sesion: str) -> str:
 
 
 @tool
-async def buscar_resultados_sesion(sesion_id: int) -> str:
-    """Busca los resultados (posiciones, tiempos y puntos) de una sesión,
-    dado su sesion_id NUMÉRICO.
+async def buscar_resultados_sesion(sesion_id: int | list[int]) -> str:
+    """Busca los resultados (posiciones, tiempos y puntos) de UNA o VARIAS
+    sesiones, dado su sesion_id NUMÉRICO o una lista de sesion_id.
 
-    Usar esta herramienta cuando ya tengas el sesion_id NUMÉRICO (obtenido con
-    buscar_sesion). Devuelve los resultados de TODOS los pilotos de esa sesión,
-    ordenados por posición; los pilotos sin posición (ej. DNF) aparecen al final.
+    Usar esta herramienta cuando ya tengas el/los sesion_id NUMÉRICOS
+    (obtenidos con buscar_gran_premio o buscar_sesion). Si pasás una lista,
+    devuelve los resultados de todas esas sesiones en una sola respuesta.
+    Devuelve los resultados de TODOS los pilotos de cada sesión, ordenados
+    por posición; los pilotos sin posición (ej. DNF) aparecen al final.
     El tipo de resultado (QUALY, CARRERA, etc.) se determina automáticamente
     vía SESIONES -> TIPOS_SESION.
-    Devuelve un mensaje de ERROR si el sesion_id no existe.
+    Devuelve un mensaje de ERROR si algún sesion_id no existe.
     """
-    sesion = next((s for s in SESIONES_DB if s["id"] == sesion_id), None)
-    if sesion is None:
-        return (
-            f"ERROR: no existe ninguna sesión con id={sesion_id}. "
-            "Usá buscar_sesion para obtener un sesion_id válido."
+    ids = sesion_id if isinstance(sesion_id, list) else [sesion_id]
+    if not ids or not all(isinstance(i, int) for i in ids):
+        return "ERROR: sesion_id debe ser un entero o una lista de enteros."
+    bloques = []
+    for id_sesion in ids:
+        sesion = next((s for s in SESIONES_DB if s["id"] == id_sesion), None)
+        if sesion is None:
+            return (
+                f"ERROR: no existe ninguna sesión con id={id_sesion}. "
+                "Usá buscar_gran_premio o buscar_sesion para obtener sesion_id válidos."
+            )
+        tipo = next(
+            t["nombre"] for t in TIPOS_SESION_DB if t["id"] == sesion["tipo_sesion_id"]
         )
-    tipo = next(
-        t["nombre"] for t in TIPOS_SESION_DB if t["id"] == sesion["tipo_sesion_id"]
-    )
-    resultados = [r for r in RESULTADOS_DB if r["sesion_id"] == sesion_id]
-    lineas = []
-    for r in sorted(resultados, key=lambda x: (x["posicion"] is None, x["posicion"] or 999)):
-        piloto = next(p for p in PILOTOS_DB if p["id"] == r["piloto_id"])
-        if r["posicion"] is None:
-            estado = "sin clasificar (DNF o no completó la sesión)"
-        else:
-            estado = f"posición {r['posicion']}, tiempo {r['tiempo']}"
-            if r["puntos"] is not None:
-                estado += f", {r['puntos']:.1f} puntos"
-        lineas.append(f"- {piloto['nombre']}: {estado}")
-    return f"Resultados de la sesión {tipo} (sesion_id={sesion_id}):\n" + "\n".join(lineas)
+        resultados = [r for r in RESULTADOS_DB if r["sesion_id"] == id_sesion]
+        lineas = []
+        for r in sorted(resultados, key=lambda x: (x["posicion"] is None, x["posicion"] or 999)):
+            piloto = next(p for p in PILOTOS_DB if p["id"] == r["piloto_id"])
+            if r["posicion"] is None:
+                estado = "sin clasificar (DNF o no completó la sesión)"
+            else:
+                estado = f"posición {r['posicion']}, tiempo {r['tiempo']}"
+                if r["puntos"] is not None:
+                    estado += f", {r['puntos']:.1f} puntos"
+            lineas.append(f"- {piloto['nombre']}: {estado}")
+        bloques.append(
+            f"Resultados de la sesión {tipo} (sesion_id={id_sesion}):\n"
+            + "\n".join(lineas)
+        )
+    return "\n\n".join(bloques)
 
 
 herramientas = [

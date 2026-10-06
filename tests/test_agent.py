@@ -112,6 +112,10 @@ async def test_buscar_pilotos_por_escuderia() -> None:
 async def test_buscar_gran_premio_por_pais() -> None:
     resultado = await buscar_gran_premio.ainvoke({"nombre": "Japón"})
     assert "gran_premio_id=1" in resultado
+    # buscar_gran_premio NO devuelve sesiones: el agente debe obtener los
+    # sesion_id mediante buscar_sesion (razonamiento multi-paso obligatorio).
+    assert "sesion_id" not in resultado
+    assert "Sesiones" not in resultado
 
 
 async def test_buscar_gran_premio_inexistente() -> None:
@@ -218,8 +222,8 @@ async def test_memoria_entre_turnos(tmp_path) -> None:
 
 @requiere_llm
 async def test_ciclo_retorno_ante_error(tmp_path) -> None:
-    """Ante un GP inexistente, el agente no debe romper ni inventar: debe
-    informar el problema o pedir aclaración."""
+    """Ante un GP inexistente, el agente debe hacer UNA búsqueda fallida y
+    luego pedir aclaración (sin repetir la misma búsqueda ni inventar)."""
     async for app in _crear_app(tmp_path):
         config = {"configurable": {"thread_id": "test-error"}, "recursion_limit": RECURSION_LIMIT}
         resultado = await app.ainvoke(
@@ -228,4 +232,40 @@ async def test_ciclo_retorno_ante_error(tmp_path) -> None:
         )
         respuesta = extraer_texto(resultado["messages"][-1])
         assert respuesta  # respondió algo controlado
+        # No inventa resultados: informa el problema o pide aclaración.
         assert "brasil" not in respuesta.lower() or "no" in respuesta.lower()
+        # No repite la búsqueda fallida: a lo sumo 1 llamada a buscar_gran_premio.
+        llamadas_brasil = [
+            m for m in resultado["messages"]
+            if getattr(m, "tool_calls", None)
+            and any(tc["name"] == "buscar_gran_premio" for tc in m.tool_calls)
+        ]
+        assert len(llamadas_brasil) <= 1
+
+
+@requiere_llm
+async def test_chat_interactivo(tmp_path, monkeypatch, capsys) -> None:
+    """El modo interactivo debe responder preguntas en secuencia usando el
+    mismo thread_id (memoria entre turnos) y terminar con 'salir'."""
+    from unittest.mock import patch
+
+    from main import REACT_TRACE, chat_interactivo
+
+    respuestas_simuladas = [
+        "¿Cómo clasificaron los pilotos de Ferrari en el GP de Japón?",
+        "¿Y cómo terminaron la carrera?",
+        "salir",
+    ]
+    monkeypatch.setattr("builtins.input", lambda prompt="": respuestas_simuladas.pop(0))
+    monkeypatch.chdir(tmp_path)  # traza aislada en BD temporal
+
+    (tmp_path / "traces").mkdir()
+    await chat_interactivo()
+
+    traza = json.loads((tmp_path / REACT_TRACE).read_text(encoding="utf-8"))
+    assert "escenario_chat_interactivo" in traza
+    mensajes_chat = traza["escenario_chat_interactivo"]
+    # Dos preguntas del usuario -> dos respuestas finales del agente.
+    finales = [m for m in mensajes_chat if m["tipo"] == "AIMessage" and not m.get("tool_calls")]
+    assert len(finales) >= 2
+    assert all(m["contenido"] for m in finales)

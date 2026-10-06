@@ -116,12 +116,20 @@ ningún `if/else` que inspeccione el texto del prompt para hacer routing manual.
 Ejemplo real de la traza (consulta principal):
 
 ```
-Turno 1: buscar_escuderia("Ferrari") + buscar_gran_premio("Japón")   [paralelas]
-Turno 2: buscar_pilotos_por_escuderia(1) + buscar_sesion(1, "QUALY")
-         + buscar_sesion(1, "CARRERA")                               [paralelas]
-Turno 3: buscar_resultados_sesion(1) + buscar_resultados_sesion(2)   [paralelas]
-Turno 4: respuesta final
+Turno 1: buscar_escuderia("Ferrari")
+Turno 2: buscar_pilotos_por_escuderia(1)
+Turno 3: buscar_gran_premio("Japón")
+Turno 4: buscar_sesion(1, "QUALY")
+Turno 5: buscar_sesion(1, "CARRERA")
+Turno 6: buscar_resultados_sesion([1, 2])
+Turno 7: respuesta final
 ```
+
+La cantidad y el orden de las llamadas pueden variar según el LLM y su
+comportamiento (algunos agrupan llamadas independientes en un mismo turno,
+otros las emiten una por una). Lo importante es que el agente obtiene los
+`sesion_id` **obligatoriamente** mediante `buscar_sesion`: `buscar_gran_premio`
+no devuelve sesiones.
 
 ## 6. Persistencia y thread_id
 
@@ -174,6 +182,9 @@ python main.py
 # Verificar que la memoria persiste tras reiniciar el proceso:
 python main.py --recordar
 
+# Consola interactiva: preguntale al agente en tiempo real:
+python main.py --chat
+
 # Tests (los de integración se saltan si no hay API key):
 pytest tests/ -v
 ```
@@ -194,8 +205,9 @@ El agente decide autónomamente (sin if/else manual):
   -> respuesta final
 ```
 
-Son 7 tool calls en 3 rondas (el modelo agrupa las llamadas independientes en
-un mismo turno), muy por encima del mínimo de 2 tool calls pedido.
+La cantidad de llamadas puede variar según el LLM (algunos agrupan llamadas
+independientes en un mismo turno, otros las emiten una por una); en todas las
+variantes el ciclo ReAct es el mismo y supera el mínimo de 2 tool calls pedido.
 
 ## 11. Ejemplo de memoria
 
@@ -244,7 +256,57 @@ observación vuelve al LLM (no rompe la ejecución, gracias a
 texto) → el modelo razona de nuevo e informa el problema / pide aclaración en
 vez de inventar resultados.
 
-## 13. Ubicación de react_trace.json
+## 13. Modo interactivo
+
+```bash
+python main.py --chat
+```
+
+Consola interactiva para demostrar el agente en tiempo real, con el mismo
+flujo de arquitectura que los escenarios (sin cambios):
+
+```
+CLI -> StateGraph -> LLM -> Tool Calling -> ToolNode -> Tools
+    -> Observation -> LLM -> respuesta
+```
+
+- La sesión usa su propio `thread_id` (`f1-chat-001`): la memoria conversacional
+  funciona entre preguntas y persiste en `checkpoints.sqlite` entre ejecuciones.
+- Cada turno se acumula en `traces/react_trace.json` bajo
+  `escenario_chat_interactivo` (traza observable de tool calls y observaciones).
+
+Comandos disponibles:
+
+| Comando | Acción |
+|---------|--------|
+| `/help` | muestra los comandos disponibles |
+| `/new` | genera un nuevo `thread_id` y empieza una conversación nueva (mismo `AsyncSqliteSaver`: la conversación anterior queda guardada) |
+| `/thread` | muestra el `thread_id` actual |
+| `/trace` | muestra la última traza ReAct observable (`USER` / `TOOL CALL` / `TOOL RESULT` / ... / `FINAL RESPONSE`; sin chain-of-thought) |
+| `/exit` | salir (también: `exit`, `quit`, `salir`) |
+
+Ejemplo de sesión:
+
+```
+🧑 Vos: ¿Cómo clasificaron los pilotos de Ferrari en el GP de Japón?
+🤖 (tabla de clasificación, tras varios tool calls encadenados)
+🧑 Vos: ¿Y cómo terminaron la carrera?
+🤖 (tabla de la carrera — usó la memoria del turno anterior, mismo thread_id)
+🧑 Vos: /trace
+   --- Traza ReAct observable (último turno) ---
+   USER
+   TOOL CALL: buscar_escuderia({'nombre': 'Ferrari'})
+   TOOL RESULT: ...
+   FINAL RESPONSE: ...
+🧑 Vos: /new
+   🆕 Nueva conversación. thread_id: f1-chat-001-4f47c09d
+🧑 Vos: ¿Y cómo le fue a McLaren?
+🤖 (pide aclaración: la conversación nueva no tiene el contexto anterior)
+🧑 Vos: /exit
+👋 Sesión terminada. La memoria quedó guardada en checkpoints.sqlite.
+```
+
+## 14. Ubicación de react_trace.json
 
 `traces/react_trace.json` — generado por `python main.py`. Contiene la traza
 observable de cada escenario:

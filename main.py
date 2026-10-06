@@ -17,15 +17,20 @@ Uso:
                                 # demostrando que la memoria persiste en
                                 # checkpoints.sqlite aunque el proceso se
                                 # haya reiniciado.
+    python main.py --chat       # consola interactiva: hacé preguntas al agente
+                                # en tiempo real (mismo thread_id durante toda
+                                # la sesión, memoria persistente, traza ReAct
+                                # acumulada en traces/react_trace.json).
 """
 
 from __future__ import annotations
 
 import asyncio
 import json
+from uuid import uuid4
 
 from dotenv import load_dotenv
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from langgraph.checkpoint.sqlite.aio import AsyncSqliteSaver
 
 from src.graph import CHECKPOINTS_DB, RECURSION_LIMIT, compilar_grafo
@@ -48,6 +53,15 @@ CONFIG = {
 
 CONFIG_ERROR = {
     "configurable": {"thread_id": THREAD_ID_ERROR},
+    "recursion_limit": RECURSION_LIMIT,
+}
+
+# thread_id propio del modo interactivo: cada sesión --chat tiene su propia
+# conversación, separada de los escenarios de demostración.
+THREAD_ID_CHAT = "f1-chat-001"
+
+CONFIG_CHAT = {
+    "configurable": {"thread_id": THREAD_ID_CHAT},
     "recursion_limit": RECURSION_LIMIT,
 }
 
@@ -123,6 +137,129 @@ async def recordar(app) -> dict:
     return resultado
 
 
+def _ayuda_chat() -> None:
+    """Imprime los comandos disponibles en el modo interactivo."""
+    print(
+        "\nComandos disponibles:\n"
+        "  /help    -> muestra los comandos disponibles\n"
+        "  /new     -> nueva conversación (nuevo thread_id, misma memoria SQLite)\n"
+        "  /thread  -> muestra el thread_id actual\n"
+        "  /trace   -> muestra la última traza ReAct observable\n"
+        "  /exit    -> salir (también: exit, quit, salir)\n"
+    )
+
+
+def _formatear_traza_observable(mensajes: list) -> str:
+    """Formatea la traza observable de un turno: USER / TOOL CALL / TOOL RESULT
+    / ... / FINAL RESPONSE. No incluye razonamiento privado del LLM."""
+    lineas: list[str] = []
+    for m in mensajes:
+        tool_calls = getattr(m, "tool_calls", None)
+        if isinstance(m, HumanMessage):
+            lineas.append("USER")
+        elif tool_calls:
+            for tc in tool_calls:
+                lineas.append(f"TOOL CALL: {tc['name']}({tc['args']})")
+        elif isinstance(m, ToolMessage):
+            lineas.append(f"TOOL RESULT: {extraer_texto(m)}")
+        elif isinstance(m, AIMessage) and extraer_texto(m):
+            lineas.append(f"FINAL RESPONSE: {extraer_texto(m)}")
+    return "\n".join(lineas)
+
+
+async def chat_interactivo() -> None:
+    """Modo --chat: consola interactiva para demostrar el agente en tiempo real.
+
+    Flujo (idéntico al de los escenarios, sin cambios de arquitectura):
+
+        CLI -> StateGraph -> LLM -> Tool Calling -> ToolNode -> Tools
+            -> Observation -> LLM -> respuesta
+
+    - Usa un thread_id propio de la sesión, así que la memoria conversacional
+      funciona entre preguntas (y persiste en checkpoints.sqlite entre
+      ejecuciones si se reutiliza el mismo thread_id).
+    - /new genera un nuevo thread_id y arranca una conversación limpia con el
+      MISMO AsyncSqliteSaver (la conversación anterior queda en checkpoints.sqlite).
+    - Cada turno se agrega a traces/react_trace.json (traza observable).
+    - Comandos: /help /new /thread /trace /exit (también exit, quit, salir).
+    """
+    print("=" * 80)
+    print("🤖 Agente ReAct de Fórmula 1 — modo interactivo")
+    print(f"   thread_id: {THREAD_ID_CHAT} (memoria persistente en {CHECKPOINTS_DB})")
+    print("   Escribí tu pregunta sobre la temporada 2026, /help para ver comandos.")
+    print("=" * 80)
+
+    thread_id = THREAD_ID_CHAT
+    historial: list = []
+    async with AsyncSqliteSaver.from_conn_string(CHECKPOINTS_DB) as checkpointer:
+        app = compilar_grafo(checkpointer)
+        config = {"configurable": {"thread_id": thread_id}, "recursion_limit": RECURSION_LIMIT}
+        while True:
+            try:
+                prompt = input("\n🧑 Vos: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\n👋 Sesión terminada.")
+                break
+            if not prompt:
+                continue
+
+            comando = prompt.lower()
+            if comando in {"/exit", "salir", "exit", "quit"}:
+                print("👋 Sesión terminada. La memoria quedó guardada en checkpoints.sqlite.")
+                break
+            if comando == "/help":
+                _ayuda_chat()
+                continue
+            if comando == "/thread":
+                print(f"🔗 thread_id actual: {thread_id}")
+                continue
+            if comando == "/new":
+                thread_id = f"{THREAD_ID_CHAT}-{uuid4().hex[:8]}"
+                config = {
+                    "configurable": {"thread_id": thread_id},
+                    "recursion_limit": RECURSION_LIMIT,
+                }
+                historial = []
+                print(f"🆕 Nueva conversación. thread_id: {thread_id}")
+                continue
+            if comando == "/trace":
+                if not historial:
+                    print("(todavía no hay turnos en esta conversación)")
+                else:
+                    # Muestra solo el último turno: desde el último USER hasta
+                    # la respuesta final (eventos observables, sin CoT).
+                    print("\n--- Traza ReAct observable (último turno) ---")
+                    print(_formatear_traza_observable(historial[-1]))
+                    print("--- fin de traza ---")
+                continue
+
+            print("🤖 ...")
+            resultado = await ejecutar_consulta(app, config, prompt)
+            respuesta = extraer_texto(resultado["messages"][-1])
+            print(f"🤖 {respuesta}")
+            # Solo los mensajes NUEVOS de este turno: el checkpointer devuelve
+            # el historial completo del thread, pero /trace debe mostrar el
+            # último turno (USER -> TOOL CALL/RESULT -> ... -> FINAL RESPONSE).
+            mensajes = resultado["messages"]
+            indice_ultimo_user = max(
+                i for i, m in enumerate(mensajes) if isinstance(m, HumanMessage)
+            )
+            historial.append(mensajes[indice_ultimo_user:])
+
+            # Traza observable acumulada por turno (no bloquea la conversación).
+            traza_chat = {
+                "escenario_chat_interactivo": serializar_traza(mensajes[indice_ultimo_user:])
+            }
+            try:
+                with open(REACT_TRACE, encoding="utf-8") as f:
+                    traza_previa = json.load(f)
+                traza_chat = {**traza_previa, **traza_chat}
+            except FileNotFoundError:
+                pass
+            with open(REACT_TRACE, "w", encoding="utf-8") as f:
+                json.dump(traza_chat, f, ensure_ascii=False, indent=2)
+
+
 async def main() -> None:
     async with AsyncSqliteSaver.from_conn_string(CHECKPOINTS_DB) as checkpointer:
         app = compilar_grafo(checkpointer)
@@ -169,5 +306,7 @@ if __name__ == "__main__":
 
     if "--recordar" in sys.argv:
         asyncio.run(main_recordar())
+    elif "--chat" in sys.argv:
+        asyncio.run(chat_interactivo())
     else:
         asyncio.run(main())
